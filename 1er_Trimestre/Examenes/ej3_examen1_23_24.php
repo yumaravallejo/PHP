@@ -24,9 +24,9 @@
 
     if(isset($_POST['enviar'])) {
         $error_vacio = $_POST['texto'] == "" || $_POST['desplazamiento'] == "" || $_FILES['fichero']['name'] == "";
-        $error_fichero = $_FILES['fichero']['error'];
+        $error_fichero = $_FILES['fichero']['error']!= 0;
         $error_numero = !is_numeric($_POST['desplazamiento']);
-        $error_tamano = $_FILES['fichero']['size'] < (1250 * 1024);
+        $error_tamano = $_FILES['fichero']['size'] > (1250 * 1024);
         $error_formato = $_FILES['fichero']['type'] != "text/plain";
         $error_form = $error_vacio || $error_fichero || !caracteres_invalidos($_POST['texto']) || !num_valido($_POST['desplazamiento']) ||
         $error_tamano || $error_formato || $error_numero;
@@ -38,10 +38,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Examen 23/24</title>
+    <style>
+        .error {color:red;}
+    </style>
 </head>
 <body>
-    <h1>Ejercicio 1. Generador de "claves_cesar.txt"</h1>
-    <form action="ej3_examen1_23_24.php" method="post">
+    <h1>Ejercicio 3</h1>
+    <form action="ej3_examen1_23_24.php" method="post" enctype="multipart/form-data">
         <p>
             <label for="text">Introduzca un texto</label>
             <input type="text" name="texto" id="text" value="<?php if (isset($_POST['texto'])) echo $_POST['texto'];?>">
@@ -64,11 +67,7 @@
                 if (isset($_POST['enviar']) && $error_form){
                     if ($_POST['desplazamiento']=="") {
                         echo "<span class='error'>* Campo Vacío *</span>";
-                    } else if ($_FILES['fichero']['size'] < (1250 * 1024)) {
-                        echo "<span class='error'>* El tamaño debe ser menor de 1,25MB *</span>";
-                    } else if ($_FILES['fichero']['type'] != "text/plain") {
-                        echo "<span class='error'>* Debes seleccionar un fichero de texto *</span>";
-                    } else if (!num_valido($_POST['desplazamiento'])) {
+                    }  else if (!num_valido($_POST['desplazamiento'])) {
                         echo "<span class='error'>* Debes seleccionar un número entre 1 y 26 *</span>";
                     }
                 }
@@ -81,8 +80,12 @@
                 if (isset($_POST['enviar']) && $error_form){
                     if ($_FILES['fichero']['name']=="") {
                         echo "<span class='error'>* Campo Vacío *</span>";
-                    } else if ($_FILES['fichero']['error']) {
+                    } else if ($_FILES['fichero']['error'] != 0) {
                         echo "<span class='error'>* Hay un error *</span>";
+                    } else if ($_FILES['fichero']['size'] < (1250 * 1024)) {
+                        echo "<span class='error'>* El tamaño debe ser menor de 1,25MB *</span>";
+                    } else if ($_FILES['fichero']['type'] != "text/plain") {
+                        echo "<span class='error'>* Debes seleccionar un fichero de texto *</span>";
                     }
                 }
             ?>
@@ -92,6 +95,7 @@
     
         <?php
             if(isset($_POST['enviar']) && !$error_form) {
+                echo "<h2>Respuesta</h2>";
                 $alfabeto = array("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", 
                 "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z");
                 $texto = $_POST['texto'];
@@ -100,32 +104,33 @@
                 $nombre_archivo = "claves_cesar.txt";
                 @$archivo = fopen($nombre_archivo, "r") or die ("No se ha podido abrir el archivo");
 
-                for ($i=0; $i<$salto; $i++){
+                for ($i=0; $i<=$salto; $i++){
                     $linea = fgets($archivo);
                 }
 
                 $arr_linea = explode(";", $linea);
+                $texto_sin_espacio = explode(" ", $texto);
 
-                $texto_arr = explode(" ", $texto);
-                for ($j=0; $j<count($texto_arr); $j++){
-                    for ($x=0; $x<strlen($texto_arr[$j]); $x++){
-                        $valor = $texto_arr[$j][$x];
-                        $posicion = 0;
+                for ($j=0; $j<count($texto_sin_espacio); $j++){
+
+                    for ($x=0; $x<strlen($texto_sin_espacio[$j]); $x++){
+                        $valor = $texto_sin_espacio[$j][$x];
 
                         for ($k=0; $k<count($alfabeto); $k++){
-                            if ($valor == $alfabeto[$k]){
-                                $posicion == $k;
-                            }
-                        }
+                            if ($valor === $alfabeto[$k]){
+                                $texto_sin_espacio[$j][$x] = $arr_linea[$k];
+                                break 1;
+                            }                            
+                        }     
+                        
+                        
 
-                        $texto_arr[$j][$x] = $arr_linea[$posicion];
                     }
                 }
-
-                echo "<h2>Respuesta</h2>";
+                
                 echo "<p>";
-                    for ($m = 0; $m<count($texto_arr); $m++) {
-                        echo $texto_arr[$m]." ";
+                    for ($m = 0; $m<count($texto_sin_espacio); $m++) {
+                        echo $texto_sin_espacio[$m]." ";
                     }
                 echo "</p>";
 

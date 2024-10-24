@@ -12,6 +12,7 @@
     </form>
     <?php
         if (isset($_POST['generar'])) {
+            echo "<h2>Respuesta</h2>";
             $numeros = array(1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26);
             $alfabeto = array("A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M", "N", 
             "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z");
@@ -63,9 +64,10 @@
 
 
             fclose($archivo);
-            echo "<h2>Respuesta</h2>";
-            echo "<textarea>";
+            
+            
             @$archivo = fopen($nombre_archivo, "r") or die ("No se ha podido abrir el archivo");
+            echo "<textarea cols='".."' rows='auto'>";
             while (!feof($archivo)) {
                 $linea = fgets($archivo);
                 echo $linea;
