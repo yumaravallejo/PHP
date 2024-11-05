@@ -1,158 +1,169 @@
 <?php
-/* CONEXIÓN BBDD */
 const SERVIDOR_BD = "localhost";
 const USUARIO_BD = "jose";
-const CONTRASENIA_BD = "josefa";
+const CLAVE_BD = "josefa";
 const NOMBRE_BD = "bd_foro";
 
+/* CONEXIÓN CON LA BASE DE DATOS */
+try {
+    @$conexion = mysqli_connect(SERVIDOR_BD, USUARIO_BD, CLAVE_BD, NOMBRE_BD);
+    mysqli_set_charset($conexion, "utf8");
+} catch (Exception $e) {
+    die(error_page("Mi Primer CRUD", '<p>No se ha podido conectar a la base de datos "' . $e->getMessage() . '"</p>'));
+}
+
+/* FUNCIÓN QUE DEVUELVE UNA PÁGINA PARA UN ERROR */
 function error_page($title, $body)
 {
     return '<!DOCTYPE html>
             <html lang="en">
-
             <head>
                 <meta charset="UTF-8">
                 <meta name="viewport" content="width=device-width, initial-scale=1.0">
                 <title>' . $title . '</title>
-            </head>
-
-            <body>
-                ' . $body . '
-            </body>
-
+                </head>
+            <body>' . $body . '</body>
             </html>';
 }
 
-try {
-    @$conexion = mysqli_connect(SERVIDOR_BD, USUARIO_BD, CONTRASENIA_BD, NOMBRE_BD);
-    mysqli_set_charset($conexion, "utf8");
-} catch (Exception $e) {
-    die(error_page("Primer Crud", "<p>No se ha podido conectar con la base de datos" . $e->getMessage() . "</p>"));
+/* ----------------------------------------------------- */
+
+/* INFORMACIÓN DE USUARIO CONCRETO */
+if (isset($_POST["btnDetalles"]) || isset($_POST["btnBorrar"])) {
+    if (isset($_POST["btnDetalles"])) $valor = $_POST["btnDetalles"];
+    else if (isset($_POST["btnBorrar"])) $valor = $_POST["btnBorrar"];
+
+    try {
+        $consulta = "SELECT * FROM usuarios WHERE cod_user = '" . $valor . "'";
+        $detalle_usuario = mysqli_query($conexion, $consulta);
+    } catch (Exception $e) {
+        mysqli_close($conexion);
+        die(error_page("Mi Primer Crud", '<p>No se ha podido realizar la consulta "' . $e->getMessage() . '"</p>'));
+    }
+}
+/* ----------------------------------------------------- */
+
+
+/* ELIMINAR ALGÚN USUARIO */
+if (isset($_POST["btnBorrarDefinitivamente"])) {
+    try {
+        $consulta = "DELETE FROM usuarios WHERE cod_user = '" . $_POST["btnBorrarDefinitivamente"] . "'";
+        mysqli_query($conexion, $consulta);
+    } catch (Exception $e) {
+        mysqli_close($conexion);
+        die(error_page("Mi Primer Crud", '<p>No se ha podido realizar la consulta "' . $e->getMessage() . '"</p>'));
+    }
+}
+/* ----------------------------------------------------- */
+
+/* ERRORES DE FORMULARIO */
+if (isset($_POST['agregarUser']) || isset($_POST['editarUser'])) {
+    try {
+        $consulta = "SELECT * FROM usuarios WHERE usuario = '" . $_POST['usuario'] . "'";
+        $nombre_repetido = mysqli_query($conexion, $consulta);
+    } catch (Exception $e) {
+        mysqli_close($conexion);
+        die(error_page("Mi Primer Crud", '<p>No se ha podido realizar la consulta "' . $e->getMessage() . '"</p>'));
+    }
+
+    $formato_email = !filter_var($_POST['email'], FILTER_VALIDATE_EMAIL);
+    $user_repe = mysqli_num_rows($nombre_repetido) != 0;
+    $errores_form = $_POST['nombre'] == "" ||  $_POST['usuario'] == ""  || $_POST['email'] == "" || $_POST['clave'] == "" || $user_repe || $formato_email;
+
+    mysqli_free_result($nombre_repetido);
+}
+/* ----------------------------------------------------- */
+
+
+/* INSERTAR UN USUARIO */
+if (isset($_POST['agregarUser']) && !$errores_form) {
+    try {
+        $insertar = "INSERT INTO usuarios (cod_user, nombre, usuario, clave, email) VALUES (NULL, '" . $_POST['nombre'] . "', '" . $_POST['usuario'] . "', 'md5(" . $_POST['clave'] . ")', '" . $_POST['email'] . "')";
+        mysqli_query($conexion, $insertar);
+    } catch (Exception $e) {
+        mysqli_close($conexion);
+        die(error_page("Mi Primer Crud", '<p>No se ha podido realizar la consulta "' . $e->getMessage() . '"</p>'));
+    }
 }
 
+/* ----------------------------------------------------- */
+
+
+/* INFORMACIÓN DE TODOS LOS USUARIOS */
 try {
-    $sentencia = "SELECT * from usuarios";
-    $consulta = mysqli_query($conexion, $sentencia);
+    $consulta = "SELECT * FROM usuarios";
+    $datos_usuarios = mysqli_query($conexion, $consulta);
 } catch (Exception $e) {
     mysqli_close($conexion);
-    die(error_page("Primer Crud", "<p>No se ha podido realizar la consulta" . $e->getMessage() . "</p>"));
+    die(error_page("Mi Primer Crud", '<p>No se ha podido realizar la consulta "' . $e->getMessage() . '"</p>'));
 }
+/* ----------------------------------------------------- */
 
-if (isset($_POST['btnDetalles'])) {
-    try {
-        $sentencia = "SELECT * from usuarios where cod_user=".$_POST['btnDetalles']."";
-        $detalle = mysqli_query($conexion, $sentencia);
-    } catch (Exception $e) {
-        mysqli_close($conexion);
-        die(error_page("Primer Crud", "<p>No se ha podido realizar la consulta" . $e->getMessage() . "</p>"));
-    }
-}
 
-if (isset($_POST['btnBorrar'])) {
-    try {
-        $sentencia = "SELECT * from usuarios where cod_user=".$_POST['btnBorrar']."";
-        $datosUser = mysqli_query($conexion, $sentencia);
-    } catch (Exception $e) {
-        mysqli_close($conexion);
-        die(error_page("Primer Crud", "<p>No se ha podido realizar la consulta" . $e->getMessage() . "</p>"));
-    }
-}
 
-if (isset($_POST['btnBorrarSeguro'])) {
-    try {
-        $sentencia = "DELETE from usuarios where cod_user=".$_POST['btnBorrarSeguro']."";
-        $detalle = mysqli_query($conexion, $sentencia);
-    } catch (Exception $e) {
-        mysqli_close($conexion);
-        die(error_page("Primer Crud", "<p>No se ha podido realizar la consulta" . $e->getMessage() . "</p>"));
-    }
-}
-
+/* CERRAMOS LA CONEXIÓN */
 mysqli_close($conexion);
-?>
 
+?>
 <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Primer CRUD</title>
-    <style>
-        table,
-        td,
-        th {
-            border: 1px solid black;
-            padding: 5px;
-        }
-
-        table {
-            border-collapse: collapse;
-        }
-
-        .detalle {
-            border: none;
-            background: none;
-            color: blue;
-            text-decoration: underline;
-            cursor: pointer;
-        }
-    </style>
+    <title>Mi Primer CRUD</title>
 </head>
+<style>
+    table,
+    tr,
+    td,
+    th {
+        border: 1px solid black;
+        border-collapse: collapse;
+        padding: 3px;
+        text-align: center;
+    }
+
+    .enlace {
+        border: none;
+        background: none;
+        color: blue;
+        text-decoration: underline;
+        cursor: pointer;
+    }
+
+    .error {
+        color: red;
+    }
+</style>
 
 <body>
     <h1>Listado de los Usuarios</h1>
-
-    <table>
-        <tr>
-            <th>Nombre</th>
-            <th>Borrar</th>
-            <th>Editar</th>
-        </tr>
-        <?php
-        while ($dato_user = mysqli_fetch_assoc($consulta)) {
-            echo "<tr>";
-            echo "<td><form action='index.php' method='post'><button class='detalle' name='btnDetalles' title='Ver detalles' value='" . $dato_user['cod_user'] . "' type='submit'>" . $dato_user['nombre'] . "</button></td></form>";
-            echo "<td><form action='index.php' method='post'><button class='detalle' name='btnBorrar' title='Eliminar Usuario' value='" . $dato_user['cod_user'] . "' type='submit'><img width='30px' src='images/borrar.jpg'></button></td>";
-            echo "<td><form action='index.php' method='post'><button class='detalle' name='btnEditar' title='Editar Usuario' value='" . $dato_user['cod_user'] . "' type='submit'><img width='30px' src='images/editar2.png'></button></td>";
-            echo "</tr>";
-        }
-        ?>
-    </table>
     <?php
-    mysqli_free_result($consulta);
+    include("vistas/vistaPrincipal.php");
 
     if (isset($_POST['btnDetalles'])) {
-        if(mysqli_num_rows($detalle)>0) {
-            $tupla_detalle = mysqli_fetch_assoc($detalle);
-            mysqli_free_result($detalle);
+        include("vistas/vistaDetalles.php");
+    }
 
-            echo "<h2>Detalles del usuario " . $_POST["btnDetalles"] . "</h2>";
-            echo "<p>";
-            echo "<strong>Nombre: </strong>". $tupla_detalle['nombre']. "<br>";
-            echo "<strong>Usuario: </strong>". $tupla_detalle['usuario']. "<br>";
-            echo "<strong>Clave: </strong><br>";
-            echo "<strong>Email: </strong>". $tupla_detalle['email']. "<br>";
-            echo "</p>";
+    if (isset($_POST['btnAgregar']) || isset($_POST['agregarUser'])) {
+        if (isset($_POST['agregarUser']) && !$errores_form) {
+            echo "<p class='mensaje'>Usuario añadidio con éxito</p>";
         } else {
-            echo "<p>El usuario ya no se encuentra registrado en la BD</p>";
+            require("vistas/vistaAgregar.php");
         }
     }
 
     if (isset($_POST['btnBorrar'])) {
-        if(mysqli_num_rows($datosUser)>0) {
-            $tupla_borrar = mysqli_fetch_assoc($datosUser);
-            mysqli_free_result($datosUser);
-            echo "<p>Se dispone usted a borrar el usuario <strong>".$tupla_borrar['nombre']."</strong></p>";
-
-            echo "<form action='index.php' method='post'><button name='btnBorrarSeguro' title='Borrar el usuario' value='" . $tupla_borrar['cod_user'] . "' type='reset'>Continuar</button>";
-            echo "<form action='index.php' method='post'><button name='btnAtras' title='Volver atrás' type='submit'>Atrás</button>";
-
-        }  
+        include("vistas/vistaBorrar.php");
     }
 
-    if (isset($_POST['btnBorrarSeguro'])) {
+    if (isset($_POST["btnBorrarDefinitivamente"])) {
+        echo "<p>¡Borrado con exito el usuario!</p>";
+    }
 
+    if (isset($_POST["btnEditar"])) {
+        include("vistas/vistaEditar.php");
     }
     ?>
 </body>
