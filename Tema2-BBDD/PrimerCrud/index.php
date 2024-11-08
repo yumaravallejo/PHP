@@ -1,4 +1,6 @@
 <?php
+session_start();
+
 const SERVIDOR_BD = "localhost";
 const USUARIO_BD = "jose";
 const CLAVE_BD = "josefa";
@@ -26,13 +28,61 @@ function error_page($title, $body)
             </html>';
 }
 
+/* ERRORES DE FORMULARIO AGREGAR*/
+if (isset($_POST['agregarUser'])) {
+    try {
+        $consulta = "SELECT * FROM usuarios WHERE usuario = '" . $_POST['usuario'] . "'";
+        $usuarios = mysqli_query($conexion, $consulta);
+    } catch (Exception $e) {
+        mysqli_close($conexion);
+        die(error_page("Mi Primer Crud", '<p>No se ha podido realizar la consulta "' . $e->getMessage() . '"</p>'));
+    }
+
+    $nombre_user = mysqli_fetch_assoc($usuarios);
+
+    $formato_email = !filter_var($_POST['email'], FILTER_VALIDATE_EMAIL);
+    $user_repe = mysqli_num_rows($usuarios) != 0;
+    $errores_form = $_POST['nombre'] == "" ||  $_POST['usuario'] == ""  || $_POST['email'] == "" || $_POST['clave'] == "" || $user_repe || $formato_email;
+    
+    mysqli_free_result($usuarios);
+}
+/* ----------------------------------------------------- */
+
+
+/* ERRORES DE FORMULARIO EDITAR */
+if (isset($_POST['editarUser'])) {
+    try {
+
+        $consulta = "SELECT * FROM usuarios WHERE cod_user = '" . $_POST['editarUser'] . "'";
+        $usuarios = mysqli_query($conexion, $consulta);
+    } catch (Exception $e) {
+        mysqli_close($conexion);
+        die(error_page("Mi Primer Crud", '<p>No se ha podido realizar la consulta "' . $e->getMessage() . '"</p>'));
+    }
+
+    $user = mysqli_fetch_assoc($usuarios);
+
+    $formato_email = !filter_var($_POST['email'], FILTER_VALIDATE_EMAIL);
+    $user_repe = mysqli_num_rows($usuarios) != 0 && $user['cod_user'] != $_POST['editarUser'] ;
+    $email_repe = mysqli_num_rows($usuarios) != 0 && $user['cod_user'] != $_POST['editarUser'];
+    $errores_form = $_POST['nombre'] == "" ||  $_POST['usuario'] == ""  || $_POST['email'] == "" || $user_repe || $formato_email || $email_repe;
+    
+    mysqli_free_result($usuarios);
+}
+/* ----------------------------------------------------- */
+
+
+
 /* ----------------------------------------------------- */
 
 /* INFORMACIÓN DE USUARIO CONCRETO */
-if (isset($_POST["btnDetalles"]) || isset($_POST["btnBorrar"])) {
+if (isset($_POST["btnDetalles"]) || isset($_POST["btnBorrar"]) || (isset($_POST['btnEditar']) || (isset($_POST['editarUser']) && $errores_form))) {
     if (isset($_POST["btnDetalles"])) $valor = $_POST["btnDetalles"];
     else if (isset($_POST["btnBorrar"])) $valor = $_POST["btnBorrar"];
-
+    else if (isset($_POST['btnEditar'])) $valor = $_POST["btnEditar"];
+    else {$valor=$_POST['editarUser'];
+    }
+    
     try {
         $consulta = "SELECT * FROM usuarios WHERE cod_user = '" . $valor . "'";
         $detalle_usuario = mysqli_query($conexion, $consulta);
@@ -56,24 +106,6 @@ if (isset($_POST["btnBorrarDefinitivamente"])) {
 }
 /* ----------------------------------------------------- */
 
-/* ERRORES DE FORMULARIO */
-if (isset($_POST['agregarUser']) || isset($_POST['editarUser'])) {
-    try {
-        $consulta = "SELECT * FROM usuarios WHERE usuario = '" . $_POST['usuario'] . "'";
-        $nombre_repetido = mysqli_query($conexion, $consulta);
-    } catch (Exception $e) {
-        mysqli_close($conexion);
-        die(error_page("Mi Primer Crud", '<p>No se ha podido realizar la consulta "' . $e->getMessage() . '"</p>'));
-    }
-
-    $formato_email = !filter_var($_POST['email'], FILTER_VALIDATE_EMAIL);
-    $user_repe = mysqli_num_rows($nombre_repetido) != 0;
-    $errores_form = $_POST['nombre'] == "" ||  $_POST['usuario'] == ""  || $_POST['email'] == "" || $_POST['clave'] == "" || $user_repe || $formato_email;
-
-    mysqli_free_result($nombre_repetido);
-}
-/* ----------------------------------------------------- */
-
 
 /* INSERTAR UN USUARIO */
 if (isset($_POST['agregarUser']) && !$errores_form) {
@@ -88,8 +120,30 @@ if (isset($_POST['agregarUser']) && !$errores_form) {
 
 /* ----------------------------------------------------- */
 
+/* EDITAR INFORMACIÓN DE UN USUARIO */
+if (isset($_POST['editarUser']) && !$errores_form) {
+    try {
+        $id = $_POST['editarUser'];
+        $nombre = $_POST['nombre'];
+        $usuario = $_POST['usuario'];
+        $email = $_POST['email'];
+        if ($_POST['clave'] != "") {
+            $clave = $_POST['clave'];
+            $editar = "UPDATE usuarios SET nombre = '$nombre', usuario = '$usuario', clave = '$clave', email = '$email' WHERE cod_user = '$id'";
+        } else {
+            $editar = "UPDATE usuarios SET nombre = '$nombre', usuario = '$usuario', email = '$email' WHERE cod_user = '$id'";
+        }
 
-/* INFORMACIÓN DE TODOS LOS USUARIOS */
+        mysqli_query($conexion, $editar);
+    } catch (Exception $e) {
+        mysqli_close($conexion);
+        die(error_page("Mi Primer Crud", '<p>No se ha podido realizar la consulta "' . $e->getMessage() . '"</p>'));
+    }
+}
+/* ----------------------------------------------------- */
+
+
+/* INFORMACIÓN DE TODOS LOS USUARIOS (dejar en último lugar) */
 try {
     $consulta = "SELECT * FROM usuarios";
     $datos_usuarios = mysqli_query($conexion, $consulta);
@@ -148,7 +202,7 @@ mysqli_close($conexion);
 
     if (isset($_POST['btnAgregar']) || isset($_POST['agregarUser'])) {
         if (isset($_POST['agregarUser']) && !$errores_form) {
-            echo "<p class='mensaje'>Usuario añadidio con éxito</p>";
+            echo "<p class='mensaje'>Usuario añadido con éxito</p>";
         } else {
             require("vistas/vistaAgregar.php");
         }
@@ -162,8 +216,15 @@ mysqli_close($conexion);
         echo "<p>¡Borrado con exito el usuario!</p>";
     }
 
-    if (isset($_POST["btnEditar"])) {
-        include("vistas/vistaEditar.php");
+    if (isset($_POST["btnEditar"])|| isset($_POST['editarUser'])) {
+        if (isset($_POST['editarUser']) && !$errores_form) {
+            $_SESSION['mensaje-acc'] = "Usuario editado con éxito";
+            header("Location: index.php");
+            exit;
+        } else {
+            require("vistas/vistaEditar.php");
+        }
+        
     }
     ?>
 </body>

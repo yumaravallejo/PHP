@@ -47,6 +47,8 @@
                 echo "<span class='error'>* CAMPO VACÍO *</span>";
             } else if ($formato_email) {
                 echo "<span class='error'>* Formato de email erróneo *</span>";
+            } else {
+                echo "<span class='error'>* ESte email ya está en uso *</span>";
             }
         }
         ?>
