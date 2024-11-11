@@ -30,6 +30,70 @@ function error_page($title, $body)
 
 /* ------------------------------------------------------------------------ */
 
+
+/* VER DETALLES ------------------------------------------------------ */
+if (isset($_POST['detalles']) || isset($_POST['borrar'])) {
+    try {
+        if (isset($_POST['detalles']))$valor = $_POST['detalles'];
+        if (isset($_POST['borrar']))$valor = $_POST['borrar'];
+        
+        $sentencia = "SELECT * FROM usuarios WHERE id_usuario = $valor";
+        $detalle_usuario = mysqli_query($conexion, $sentencia);
+    } catch (Exception $e) {
+        session_destroy();
+        die("<p>No se ha podido estableceer conexión con la base de datos" . $e->getMessage() . "</p>");
+
+    }
+}
+
+/* ------------------------------------------------------------------------ */
+
+
+/* ERRORES FORMULARIO ------------------------------------------------------ */
+    if (isset($_POST['btnAgregar'])) {
+        function LetraNIF ($dni) {
+            $numDni = substr($dni, 0, 8);
+            $letraDNI= substr($dni, -1);
+            $valor= (int) ($numDni / 23);
+            $valor *= 23;
+            $valor= $numDni - $valor;
+            $letras= "TRWAGMYFPDXBNJZSQVHLCKEO";
+            $letraNif= substr ($letras, $valor, 1);
+
+            if ($letraNif != $letraDNI) {
+                return $letraNif;
+            } else {
+                return true;
+            }
+        }
+
+        var_dump($_FILES['imagen']);
+
+        $error_nombre = $_POST['nombre'] == "";
+        $error_usuario = $_POST['usuario'] == "" ;
+        $error_clave = $_POST['clave'] == "" ;
+        $error_dni = $_POST['dni'] == "" || strlen($_POST['dni']) != 9 || !LetraNif($_POST['dni']);
+        $error_foto = $_FILES['imagen']['name'] == "" || $_FILES['imagen']['size'] > 500 * 1024 || $_FILES['imagen']['type'] != "image/*" ;
+        $errores_form = $error_nombre || $error_usuario || $error_clave || $error_dni  ;
+    }
+
+/* ------------------------------------------------------------------------ */
+
+
+/* BORRAR USUARIO ------------------------------------------------------ */
+
+if (isset($_POST['borrarSeguro'])) {
+    try {
+        $valor = $_POST['borrarSeguro'];
+        $sentencia = "DELETE FROM usuarios WHERE id_usuario = $valor";
+        $detalle_usuario = mysqli_query($conexion, $sentencia);
+    } catch (Exception $e) {
+        session_destroy();
+        die("<p>No se ha podido estableceer conexión con la base de datos" . $e->getMessage() . "</p>");
+
+    }  
+}
+
 /* INFORMACIÓN DE LA TABLA ----------------------------------------- */
 try {
     $sentencia = "SELECT * FROM usuarios";
@@ -92,40 +156,66 @@ mysqli_close($conexion);
 <body>
     <h1>Práctica 8</h1>
     <?php
-    /* VISTA FORMULARIO -------------------------------------- */
-    if (isset($_POST['agregar'])) {
-        echo "";
+    /* VISTA FORMULARIO INSERTAR -------------------------------------- */
+    if (isset($_POST['agregar']) || isset($_POST['btnAgregar']) && $errores_form) {
     ?>
         <h2>Agregar Nuevo Usuario</h2>
-        <form method="post" action="index.html">
+        <form method="post" action="index.php" enctype="multipart/form-data">
             <p>
                 <label for="nombre">Nombre:</label> <br>
-                <input type="text" name="nombre" id="nombre" placeholder="Nombre..." value="">
+                <input type="text" name="nombre" id="nombre" placeholder="Nombre..." value="<?php if (isset($_POST['nombre'])) echo $_POST['nombre'] ?>">
             </p>
             <p>
                 <label for="usuario">Usuario:</label><br>
-                <input type="text" name="usuario" id="usuario" placeholder="Usuario..." value="">
+                <input type="text" name="usuario" id="usuario" placeholder="Usuario..." value="<?php if (isset($_POST['usuario'])) echo $_POST['usuario'] ?>">
             </p>
             <p>
                 <label for="clave">Contraseña:</label><br>
-                <input type="password" name="clave" id="clave" placeholder="Contraseña..." value="">
+                <input type="password" name="clave" id="clave" placeholder="Contraseña..." value="<?php if (isset($_POST['clave'])) echo $_POST['clave'] ?>">
             </p>
             <p>
                 <label for="">DNI:</label><br>
-                <input type="text" name="" id="" placeholder="DNI: 11223344Z" value="">
+                <input type="text" name="dni" id="" placeholder="DNI: 11223344Z" value="<?php if (isset($_POST['dni'])) echo $_POST['dni'] ?>">
             </p>
             <p>
                 Sexo: <br>
-                <input type="radio" name="sexo" value="hombre" id="hombre"><label for="hombre">Hombre:</label> <br>
+                <input type="radio" name="sexo" checked value="hombre" id="hombre"><label for="hombre">Hombre:</label> <br>
                 <input type="radio" name="sexo" value="mujer" id="mujer"><label for="mujer">Mujer:</label>
-
             </p>
             <p>
-                
+                <label for="foto">Incluir mi foto (Máx. 500KB)</label>
+                <input type="file" name="imagen" id="foto">
             </p>
-            <p></p>
+            <p>
+                <button type="submit" name="btnAgregar">Guardar Cambios</button>
+                <button type="submit">Atrás</button>
+            </p>
         </form>
     <?php
+    }
+
+    /* VISTA DETALLES  ------------------------------------- */
+    if (isset($_POST['detalles'])) {
+        if (mysqli_num_rows($detalle_usuario)>0) {
+            $detalle_usuario = mysqli_fetch_assoc($detalle_usuario);
+            echo "<p><strong>Nombre: </strong>".$detalle_usuario['nombre']."</p>";
+            echo "<p><strong>Usuario: </strong>".$detalle_usuario['usuario']."</p>";
+            echo "<p><strong>DNI: </strong>".$detalle_usuario['dni']."</p>";
+            echo "<p><strong>Sexo: </strong>".$detalle_usuario['sexo']."</p>";
+            echo "<form method='post' action='index.php'><button type='submit' title='Cerrar Detalles'>Atrás</button></form>";
+        }
+    }
+
+    /* VISTA BORRAR ----------------------------------------- */
+    if (isset($_POST['borrar'])) {
+        if (mysqli_num_rows($detalle_usuario)>0) {
+            $detalle_usuario = mysqli_fetch_assoc($detalle_usuario);
+            echo "<p>¿Estás seguro de querer borrar el usuario <strong>".$detalle_usuario['nombre']."</strong>?</p>";
+            echo "<p>";
+            echo "<form method='post' action='index.php'><button type='submit' name='borrarSeguro' title='Eliminar Usuario' value='".$detalle_usuario['id_usuario']."'>Eliminar</button>";
+            echo "<button type='submit' title='Cerrar Detalles'>Atrás</button></form>";
+            echo "<p>";
+        }
     }
 
     echo "<h2>Listado de los usuarios</h2>";
