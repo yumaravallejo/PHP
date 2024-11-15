@@ -1,250 +1,316 @@
 <?php
-/* INICIAMOS LA SESIÓN */
 session_start();
+require "src/funciones_ctes.php";
 
-/* CONEXIÓN CON LA BASE DE DATOS ----------------------------------------- */
-const SERVIDOR_BD = "localhost";
-const USUARIO_BD = "jose";
-const CLAVE_BD = "josefa";
-const NOMBRE_BD = "bd_cv";
-
-try {
-    @$conexion = mysqli_connect(SERVIDOR_BD, USUARIO_BD, CLAVE_BD, NOMBRE_BD);
-    mysqli_set_charset($conexion, "utf8");
-} catch (Exception $e) {
-    die(error_page("Prácctica 8", "<p>No se ha podido estableceer conexión con la base de datos" . $e->getMessage() . "</p>"));
-}
-
-function error_page($title, $body)
+try
 {
-    return '<!DOCTYPE html>
-            <html lang="en">
-            <head>
-                <meta charset="UTF-8">
-                <meta name="viewport" content="width=device-width, initial-scale=1.0">
-                <title>' . $title . '</title>
-                </head>
-            <body>' . $body . '</body>
-            </html>';
+    @$conexion=mysqli_connect(SERVIDOR_BD,USUARIO_BD,CLAVE_BD,NOMBRE_BD);
+    mysqli_set_charset($conexion,"utf8");
+}
+catch(Exception $e)
+{
+    die(error_page("Práctica 8","<p>No se ha podido conectar a la BD: ".$e->getMessage()."</p>"));
 }
 
-/* ------------------------------------------------------------------------ */
+//A partir de aquí tengo conexión con mi BD
 
+if(isset($_POST["btnContBorrar"]))
+{
+    try
+    {
+        $consulta="delete from usuarios where id_usuario='".$_POST["btnContBorrar"]."'";
+        mysqli_query($conexion,$consulta);
+        if($_POST["foto_bd"]!=NOMBRE_IMAGEN_DEFECTO_BD)
+            unlink("Img/".$_POST["foto_bd"]);
 
-/* VER DETALLES ------------------------------------------------------ */
-if (isset($_POST['detalles']) || isset($_POST['borrar'])) {
-    try {
-        if (isset($_POST['detalles']))$valor = $_POST['detalles'];
-        if (isset($_POST['borrar']))$valor = $_POST['borrar'];
-        
-        $sentencia = "SELECT * FROM usuarios WHERE id_usuario = $valor";
-        $detalle_usuario = mysqli_query($conexion, $sentencia);
-    } catch (Exception $e) {
+        $_SESSION["mensaje_accion"]="Usuario borrado con éxito";
+        header("Location:index.php");
+        exit;
+    }
+    catch(Exception $e)
+    {
+        mysqli_close($conexion);
         session_destroy();
-        die("<p>No se ha podido estableceer conexión con la base de datos" . $e->getMessage() . "</p>");
-
+        die(error_page("Práctica 8","<p>No se ha podido realizar la consulta: ".$e->getMessage()."</p>"));
     }
 }
 
-/* ------------------------------------------------------------------------ */
+
+if(isset($_POST["btnDetalles"]) || isset($_POST["btnBorrar"]) || isset($_POST["btnEditar"]))
+{
+    if(isset($_POST["btnDetalles"]))
+        $id_usuario=$_POST["btnDetalles"];
+    else
+        $id_usuario=$_POST["id_usuario"];
+
+    try
+    {
+        $consulta="select * from usuarios where id_usuario='".$id_usuario."'";
+        $result_detalle_usuario=mysqli_query($conexion,$consulta);
+        $detalles_usuario=mysqli_fetch_assoc($result_detalle_usuario);
+        mysqli_free_result($result_detalle_usuario);
+    }
+    catch(Exception $e)
+    {
+        mysqli_close($conexion);
+        session_destroy();
+        die(error_page("Práctica 8","<p>No se ha podido realizar la consulta: ".$e->getMessage()."</p>"));
+    }
+}
+
+if(isset($_POST["btnContBorrarFoto"]))
+{
+    try
+    {
+        $consulta="update usuarios set foto='".NOMBRE_IMAGEN_DEFECTO_BD."' where id_usuario='".$_POST["btnContBorrarFoto"]."'";
+        mysqli_query($conexion,$consulta);
+        unlink("Img/".$_POST["foto_bd"]);
+        $_SESSION["mensaje_accion"]="Foto de perfil borrada con éxito";
+        header("Location:index.php");
+        exit;
+    }
+    catch(Exception $e)
+    {
+        mysqli_close($conexion);
+        session_destroy();
+        die(error_page("Práctica 8","<p>No se ha podido realizar la consulta: ".$e->getMessage()."</p>"));
+    }
+}
+
+if(isset($_POST["btnContEditar"]))
+{
+    $error_nombre=$_POST["nombre"]=="";
+    $error_usuario=$_POST["usuario"]=="";
+    if(!$error_usuario)
+    {
+        $error_usuario=repetido($conexion,"usuarios","usuario",$_POST["usuario"],"id_usuario",$_POST["btnContEditar"]);
+        if(is_string($error_usuario))
+        {
+            mysqli_close($conexion);
+            session_destroy();
+            die(error_page("Práctica 8","<p>".$error_usuario."</p>"));
+        }
+    
+    }
+
+    $error_dni=$_POST["dni"]=="" || !dni_bien_escrito($_POST["dni"]) || ! dni_valido($_POST["dni"]) ;
+    if(!$error_dni)
+    {
+        $error_dni=repetido($conexion,"usuarios","dni",strtoupper($_POST["dni"]),"id_usuario",$_POST["btnContEditar"]);
+        if(is_string($error_dni))
+        {
+            mysqli_close($conexion);
+            session_destroy();
+            die(error_page("Práctica 8","<p>".$error_dni."</p>"));
+        }
+    
+    }
+
+    $error_foto=$_FILES["foto"]["name"]!="" && ($_FILES["foto"]["error"] || !tiene_extension($_FILES["foto"]["name"]) || !getimagesize($_FILES["foto"]["tmp_name"]) ||  $_FILES["foto"]["size"]>500*1024);
+    $error_form_editar=$error_nombre||$error_usuario||$error_dni||$error_foto;
+    if(!$error_form_editar)
+    {
+        //Si no hay errores actualizo
+        //
+        try
+        {
+            if($_POST["clave"]=="")
+                $consulta="update usuarios set nombre='".$_POST["nombre"]."', usuario='".$_POST["usuario"]."', dni='".strtoupper($_POST["dni"])."', sexo='".$_POST["sexo"]."' where id_usuario='".$_POST["btnContEditar"]."'";
+            else
+            $consulta="update usuarios set nombre='".$_POST["nombre"]."', usuario='".$_POST["usuario"]."', clave='".md5($_POST["clave"])."', dni='".strtoupper($_POST["dni"])."', sexo='".$_POST["sexo"]."' where id_usuario='".$_POST["btnContEditar"]."'";
+
+            mysqli_query($conexion,$consulta);
+            
+            
+        }
+        catch(Exception $e)
+        {
+            mysqli_close($conexion);
+            session_destroy();
+            die(error_page("Práctica 8","<p>No se ha podido realizar la consulta: ".$e->getMessage()."</p>"));
+        }
+        $_SESSION["mensaje_accion"]="Usuario editado con éxito";
+
+        if($_FILES["foto"]["name"]!="")
+        {
+            $array_nombre=explode(".",$_FILES["foto"]["name"]);
+            $ext=end($array_nombre);
+            $nombre_nuevo="img_".$_POST["btnContEditar"].".".$ext;
+            @$var=move_uploaded_file($_FILES["foto"]["tmp_name"],"Img/".$nombre_nuevo);
+            if($var)
+            {
+                if($nombre_nuevo!=$_POST["foto_bd"])
+                {
+                    try
+                    {
+                        $consulta="update usuarios set foto='".$nombre_nuevo."' where id_usuario='".$_POST["btnContEditar"]."'";
+                        mysqli_query($conexion,$consulta);
+                        if($_POST["foto_bd"]!=NOMBRE_IMAGEN_DEFECTO_BD)
+                            unlink("Img/".$_POST["foto_bd"]);
+                    }
+                    catch(Exception $e)
+                    {
+                        unlink("Img/".$nombre_nuevo);
+                        $_SESSION["mensaje_accion"]="Usuario insertado con éxito, pero con la imagen por defecto.";
+                    }
+                }
+            }
+            else
+                $_SESSION["mensaje_accion"]="Usuario editado con éxito, pero con la imagen por defecto";
+        }
+
+        header("Location:index.php");
+        exit;
+    }
+}
 
 
-/* ERRORES FORMULARIO ------------------------------------------------------ */
-    if (isset($_POST['btnAgregar'])) {
-        function LetraNIF ($dni) {
-            $numDni = substr($dni, 0, 8);
-            $letraDNI= substr($dni, -1);
-            $valor= (int) ($numDni / 23);
-            $valor *= 23;
-            $valor= $numDni - $valor;
-            $letras= "TRWAGMYFPDXBNJZSQVHLCKEO";
-            $letraNif= substr ($letras, $valor, 1);
 
-            if ($letraNif != $letraDNI) {
-                return $letraNif;
-            } else {
-                return true;
+
+
+if(isset($_POST["btnContAgregar"]))
+{
+    $error_nombre=$_POST["nombre"]=="";
+    $error_usuario=$_POST["usuario"]=="";
+    if(!$error_usuario)
+    {
+        $error_usuario=repetido($conexion,"usuarios","usuario",$_POST["usuario"]);
+        if(is_string($error_usuario))
+        {
+            mysqli_close($conexion);
+            session_destroy();
+            die(error_page("Práctica 8","<p>".$error_usuario."</p>"));
+        }
+    
+    }
+    $error_clave=$_POST["clave"]=="";
+    $error_dni=$_POST["dni"]=="" || !dni_bien_escrito($_POST["dni"]) || ! dni_valido($_POST["dni"]) ;
+    if(!$error_dni)
+    {
+        $error_dni=repetido($conexion,"usuarios","dni",strtoupper($_POST["dni"]));
+        if(is_string($error_dni))
+        {
+            mysqli_close($conexion);
+            session_destroy();
+            die(error_page("Práctica 8","<p>".$error_dni."</p>"));
+        }
+    
+    }
+
+    $error_foto=$_FILES["foto"]["name"]!="" && ($_FILES["foto"]["error"] || !tiene_extension($_FILES["foto"]["name"]) || !getimagesize($_FILES["foto"]["tmp_name"]) ||  $_FILES["foto"]["size"]>500*1024);
+    $error_form_agregar=$error_nombre||$error_usuario||$error_clave||$error_dni||$error_foto;
+    if(!$error_form_agregar)
+    {
+        //Inserto con imagen por defecto.
+        //Y si he subido foto, muevo la foto y actualizo el nombre de la foto en la BD (img_id.extension)
+
+        try
+        {
+            $consulta="insert into usuarios (nombre, usuario, clave, dni, sexo) values ('".$_POST["nombre"]."','".$_POST["usuario"]."','".md5($_POST["clave"])."','".strtoupper($_POST["dni"])."','".$_POST["sexo"]."')";
+            mysqli_query($conexion,$consulta);
+        }
+        catch(Exception $e)
+        {
+            mysqli_close($conexion);
+            session_destroy();
+            die(error_page("Práctica 8","<p>No se ha podido realizar la consulta: ".$e->getMessage()."</p>"));
+        }
+        
+        $_SESSION["mensaje_accion"]="Usuario insertado con éxito.";
+        if($_FILES["foto"]["name"]!="")
+        {
+            $ultm_id=mysqli_insert_id($conexion);
+            $array_nombre=explode(".",$_FILES["foto"]["name"]);
+            $ext=end($array_nombre);
+            $nombre_nuevo="img_".$ultm_id.".".$ext;
+            @$var=move_uploaded_file($_FILES["foto"]["tmp_name"],"Img/".$nombre_nuevo);
+            if($var)
+            {
+                try
+                {
+                    $consulta="update usuarios set foto='".$nombre_nuevo."' where id_usuario='".$ultm_id."'";
+                    mysqli_query($conexion,$consulta);
+                }
+                catch(Exception $e)
+                {
+                    unlink("Img/".$nombre_nuevo);
+                    $_SESSION["mensaje_accion"]="Usuario insertado con éxito, pero con la imagen por defecto.";
+                }
+            }
+            else
+            {
+                $_SESSION["mensaje_accion"]="Usuario insertado con éxito, pero con la imagen por defecto.";
             }
         }
 
-        var_dump($_FILES['imagen']);
-
-        $error_nombre = $_POST['nombre'] == "";
-        $error_usuario = $_POST['usuario'] == "" ;
-        $error_clave = $_POST['clave'] == "" ;
-        $error_dni = $_POST['dni'] == "" || strlen($_POST['dni']) != 9 || !LetraNif($_POST['dni']);
-        $error_foto = $_FILES['imagen']['name'] == "" || $_FILES['imagen']['size'] > 500 * 1024 || $_FILES['imagen']['type'] != "image/*" ;
-        $errores_form = $error_nombre || $error_usuario || $error_clave || $error_dni  ;
+        header("Location:index.php");
+        exit();
     }
-
-/* ------------------------------------------------------------------------ */
-
-
-/* BORRAR USUARIO ------------------------------------------------------ */
-
-if (isset($_POST['borrarSeguro'])) {
-    try {
-        $valor = $_POST['borrarSeguro'];
-        $sentencia = "DELETE FROM usuarios WHERE id_usuario = $valor";
-        $detalle_usuario = mysqli_query($conexion, $sentencia);
-    } catch (Exception $e) {
-        session_destroy();
-        die("<p>No se ha podido estableceer conexión con la base de datos" . $e->getMessage() . "</p>");
-
-    }  
 }
 
-/* INFORMACIÓN DE LA TABLA ----------------------------------------- */
-try {
-    $sentencia = "SELECT * FROM usuarios";
-    $todos_usuarios = mysqli_query($conexion, $sentencia);
-} catch (Exception $e) {
+
+///Por último hago la consulta para listar los usuarios de la tabla principal
+try
+{
+    $consulta="select * from usuarios";
+    $result_datos_usuarios=mysqli_query($conexion,$consulta);
+}
+catch(Exception $e)
+{
     mysqli_close($conexion);
-    die("<p>No se ha podido realizar la sentencia " . $e->getMessage() . "</p>");
+    session_destroy();
+    die(error_page("Práctica 8","<p>No se ha podido realizar la consulta: ".$e->getMessage()."</p>"));
 }
 
 mysqli_close($conexion);
-
-/* ------------------------------------------------------------------------ */
-
-
 ?>
-
 <!DOCTYPE html>
-<html lang="en">
-
+<html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Práctica 8</title>
     <style>
-        .enlace {
-            border: none;
-            background: none;
-            color: darkblue;
+        table, th, td{border:1px solid black}
+        table {border-collapse:collapse;width:90%;margin:0 auto;text-align:center}
+        img{height:100px}
+        .enlace{
+            background:none;
+            border:none;
+            color:blue;
             text-decoration: underline;
             cursor: pointer;
-            font-weight: normal;
         }
-
-        table,
-        th,
-        td {
-            border: 1px solid black;
-            text-align: center;
-        }
-
-        td {
-            padding: 0.5rem 4rem;
-        }
-
-        th {
-            padding: 0.5rem
-        }
-
-        table {
-            border-collapse: collapse;
-        }
-
-        img {
-            width: 70px;
-            height: auto;
-        }
+        .mensaje{font-size:1.25rem;color:blue}
+        .error{color:red}
     </style>
 </head>
-
 <body>
     <h1>Práctica 8</h1>
     <?php
-    /* VISTA FORMULARIO INSERTAR -------------------------------------- */
-    if (isset($_POST['agregar']) || isset($_POST['btnAgregar']) && $errores_form) {
+    if(isset($_POST["btnDetalles"]))
+        require "vistas/vista_detalles.php";
+
+    if(isset($_POST["btnBorrar"]))
+        require "vistas/vista_borrar.php";
+
+    if(isset($_POST["btnAgregar"]) || (isset($_POST["btnContAgregar"])&& $error_form_agregar ) )
+        require "vistas/vista_agregar.php";
+
+
+    if(isset($_POST["btnEditar"]) || (isset($_POST["btnContEditar"])&& $error_form_editar ))
+        require "vistas/vista_editar.php";
+
+    if(isset($_POST["btnBorrarFoto"]) )
+        require "vistas/vista_borrar_foto.php";
+
+    if(isset($_SESSION["mensaje_accion"]))
+    {
+        echo "<p class='mensaje'>¡¡ ".$_SESSION["mensaje_accion"]." !!</p>";
+        session_destroy();
+    }
+
+    require "vistas/vista_tabla_principal.php";
     ?>
-        <h2>Agregar Nuevo Usuario</h2>
-        <form method="post" action="index.php" enctype="multipart/form-data">
-            <p>
-                <label for="nombre">Nombre:</label> <br>
-                <input type="text" name="nombre" id="nombre" placeholder="Nombre..." value="<?php if (isset($_POST['nombre'])) echo $_POST['nombre'] ?>">
-            </p>
-            <p>
-                <label for="usuario">Usuario:</label><br>
-                <input type="text" name="usuario" id="usuario" placeholder="Usuario..." value="<?php if (isset($_POST['usuario'])) echo $_POST['usuario'] ?>">
-            </p>
-            <p>
-                <label for="clave">Contraseña:</label><br>
-                <input type="password" name="clave" id="clave" placeholder="Contraseña..." value="<?php if (isset($_POST['clave'])) echo $_POST['clave'] ?>">
-            </p>
-            <p>
-                <label for="">DNI:</label><br>
-                <input type="text" name="dni" id="" placeholder="DNI: 11223344Z" value="<?php if (isset($_POST['dni'])) echo $_POST['dni'] ?>">
-            </p>
-            <p>
-                Sexo: <br>
-                <input type="radio" name="sexo" checked value="hombre" id="hombre"><label for="hombre">Hombre:</label> <br>
-                <input type="radio" name="sexo" value="mujer" id="mujer"><label for="mujer">Mujer:</label>
-            </p>
-            <p>
-                <label for="foto">Incluir mi foto (Máx. 500KB)</label>
-                <input type="file" name="imagen" id="foto">
-            </p>
-            <p>
-                <button type="submit" name="btnAgregar">Guardar Cambios</button>
-                <button type="submit">Atrás</button>
-            </p>
-        </form>
-    <?php
-    }
-
-    /* VISTA DETALLES  ------------------------------------- */
-    if (isset($_POST['detalles'])) {
-        if (mysqli_num_rows($detalle_usuario)>0) {
-            $detalle_usuario = mysqli_fetch_assoc($detalle_usuario);
-            echo "<p><strong>Nombre: </strong>".$detalle_usuario['nombre']."</p>";
-            echo "<p><strong>Usuario: </strong>".$detalle_usuario['usuario']."</p>";
-            echo "<p><strong>DNI: </strong>".$detalle_usuario['dni']."</p>";
-            echo "<p><strong>Sexo: </strong>".$detalle_usuario['sexo']."</p>";
-            echo "<form method='post' action='index.php'><button type='submit' title='Cerrar Detalles'>Atrás</button></form>";
-        }
-    }
-
-    /* VISTA BORRAR ----------------------------------------- */
-    if (isset($_POST['borrar'])) {
-        if (mysqli_num_rows($detalle_usuario)>0) {
-            $detalle_usuario = mysqli_fetch_assoc($detalle_usuario);
-            echo "<p>¿Estás seguro de querer borrar el usuario <strong>".$detalle_usuario['nombre']."</strong>?</p>";
-            echo "<p>";
-            echo "<form method='post' action='index.php'><button type='submit' name='borrarSeguro' title='Eliminar Usuario' value='".$detalle_usuario['id_usuario']."'>Eliminar</button>";
-            echo "<button type='submit' title='Cerrar Detalles'>Atrás</button></form>";
-            echo "<p>";
-        }
-    }
-
-    echo "<h2>Listado de los usuarios</h2>";
-    echo "<table>";
-    echo "<tr>";
-    echo "<th>#</th>";
-    echo "<th>Foto</th>";
-    echo "<th>Nombre</th>";
-    echo "<td><form method='post' action='index.php'><button class='enlace' type='submit' name='agregar'>Usuario+</button></form></td>";
-    echo "</tr>";
-    while ($tupla = mysqli_fetch_assoc($todos_usuarios)) {
-        echo "<tr>";
-        echo "<th>" . $tupla['id_usuario'] . "</th>";
-        echo "<td><img src='img/" . $tupla['foto'] . "'></td>";
-        echo '<td>
-                <form action="index.php" method="post">
-                    <button class="enlace" title="Ver Detalles" type="submit" name="detalles" value="' . $tupla["id_usuario"] . '">' . $tupla['nombre'] . '</button>
-                </form>
-            </td>';
-        echo "<td>";
-        echo "<p><form method='post' action='index.php'><button class='enlace' type='submit' name='borrar' value='" . $tupla['id_usuario'] . "'>Borrar</button>
-         - <button class='enlace' type='submit' name='editar' value='" . $tupla['id_usuario'] . "'>Editar</button></form></p>";
-        echo "</td>";
-        echo "</tr>";
-    }
-    ?>
-    </table>
-
-
 </body>
-
 </html>
