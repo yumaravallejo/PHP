@@ -1,4 +1,5 @@
 <?php
+session_name("Primer_Login");
 session_start();
 require "src/funciones_ctes.php";
 
