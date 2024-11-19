@@ -75,7 +75,7 @@
             ?>
     </p>
     <p>
-        <button type="submit" name="btnContAgregar">Guardar cambios</button> 
+        <button type="submit" name="btnContAgregar">Añadir</button> 
         <button type="submit">Atrás</button>
     </p>    
 </form>

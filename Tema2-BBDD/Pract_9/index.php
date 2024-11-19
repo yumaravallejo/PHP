@@ -134,7 +134,7 @@ if (isset($_POST["btnContEditar"])) {
 
 
 
-if (isset($_POST["btnContAgregar"])) {
+if (isset($_POST["btnContAgregar"]) || isset($_POST['btnContRegistro'])) {
     $error_nombre = $_POST["nombre"] == "";
     $error_usuario = $_POST["usuario"] == "";
     if (!$error_usuario) {
@@ -193,6 +193,45 @@ if (isset($_POST["btnContAgregar"])) {
 
         header("Location:index.php");
         exit();
+    }
+}
+
+
+if (isset($_POST['btnContRegistro']) && ) {
+    $error_usuario = $_POST['usuario'] == "";
+    $error_clave = $_POST['clave'] == "";
+    $errores_form_login = $error_usuario || $error_clave;
+    if (!$errores_form_login) {
+        //Consulta la BD y si está inicio sesión salto a index
+        try {
+            @$conexion = mysqli_connect(SERVIDOR_BD, USUARIO_BD, CLAVE_BD, NOMBRE_BD);
+            mysqli_set_charset($conexion, "utf8");
+        } catch (Exception $e) {
+            session_destroy();
+            die(error_page("Login", "<p>No se ha podido acceder a la base de datos: " . $e->getMessage() . "</p>"));
+        }
+
+        //Conexión correcta, seguimos
+        try {
+            $consulta = "select usuario from usuarios where usuario='" . $_POST['usuario'] . "' AND clave = '" . md5($_POST['clave']) . "' ";
+            $result_select = mysqli_query($conexion, $consulta);
+            $n_tuplas = mysqli_num_rows($result_select);
+            mysqli_free_result($result_select);
+            if ($n_tuplas > 0) {
+                mysqli_close($conexion);
+                $_SESSION['usuario'] = $_POST['usuario'];
+                $_SESSION['clave'] = md5($_POST['clave']);
+                $_SESSION['ultm_accion'] = time();
+                header("Location:index.php");
+                exit;
+            } else {
+                $error_usuario = true;
+            }
+        } catch (Exception $e) {
+            mysqli_close($conexion);
+            session_destroy();
+            die(error_page("Primer Login", "<p>No se ha podido realizar la consulta: " . $e->getMessage() . "</p>"));
+        }
     }
 }
 
@@ -268,7 +307,12 @@ mysqli_close($conexion);
         }
         
     } else {
-        require "vistas/vista_login.php";
+        
+        if (isset($_POST['btnRegistro'])) {
+            require "vistas/vista_registro.php";
+        } else {
+            require "vistas/vista_login.php";
+        }
     }
     ?>
 </body>

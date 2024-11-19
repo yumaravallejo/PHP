@@ -82,6 +82,7 @@ if (isset($_POST['btnLogin'])) {
         <p>
             <button type="submit" name="btnLogin">Iniciar Sesión</button>
         </p>
+        <p>¿Aún no tienes cuenta?<button type="submit" name="btnRegistro">Crea tu cuenta</button></p>
     </form>
     <?php
         if(isset($_SESSION["msj_seguridad"]))
