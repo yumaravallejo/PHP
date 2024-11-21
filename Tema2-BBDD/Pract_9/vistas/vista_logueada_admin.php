@@ -22,6 +22,7 @@ if (isset($_POST["btnBorrarFoto"]))
 
 if (isset($_SESSION["mensaje_accion"])) {
     echo "<p class='mensaje'>¡¡ " . $_SESSION["mensaje_accion"] . " !!</p>";
+    unset($_SESSION['mensaje_accion']);
 }
 
 require "vistas/vista_tabla_principal.php";

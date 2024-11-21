@@ -197,7 +197,7 @@ if (isset($_POST["btnContAgregar"]) || isset($_POST['btnContRegistro'])) {
 }
 
 
-if (isset($_POST['btnContRegistro']) && ) {
+if (isset($_POST['btnContRegistro']) && !$error_form_agregar) {
     $error_usuario = $_POST['usuario'] == "";
     $error_clave = $_POST['clave'] == "";
     $errores_form_login = $error_usuario || $error_clave;
