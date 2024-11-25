@@ -5,34 +5,33 @@ require("src/funciones.php");
 
 
 
-if (isset($_POST['verHorario']) ) {
-    if (isset($_POST['verHorario'])){
+if (isset($_POST['verHorario']) || isset($_POST['btnEditar'])) {
+    if (isset($_POST['verHorario'])) {
+        $id = $_POST['horario'];
+    } else {
+        $id = substr($_POST['btnEditar'], 0, 1);
+        echo $id;
+    }
     try {
-        $consulta1 = "select * from usuarios where id_usuario = '".$_POST['horario']."'";
-        $detalle_usuario = mysqli_query($conexion, $consulta1);
-        $user = mysqli_fetch_assoc($detalle_usuario);
-        mysqli_free_result($detalle_usuario);
-
-        $consulta2 = "select horario_lectivo.hora, horario_lectivo.dia, grupos.nombre
+        $consulta2 = "select usuarios.id_usuario, horario_lectivo.hora, horario_lectivo.dia, grupos.nombre
                     from horario_lectivo
                     join grupos on horario_lectivo.grupo = grupos.id_grupo 
                     join usuarios on horario_lectivo.usuario = usuarios.id_usuario
-                    where horario_lectivo.usuario = '" . $_POST['horario'] . "'";
+                    where horario_lectivo.usuario = '" . $id . "'";
         $detalle_horario = mysqli_query($conexion, $consulta2);
         $n_tuplas = mysqli_num_rows($detalle_horario);
-        
     } catch (Exception $e) {
         mysqli_close($conexion);
         session_destroy();
         die("No se ha podido realizar la consulta " . $e->getMessage() . "");
     }
 }
-}
 
 
 try {
     $consulta = "select * from usuarios";
     $usuarios = mysqli_query($conexion, $consulta);
+    mysqli_close($conexion);
 } catch (Exception $e) {
     mysqli_close($conexion);
     session_destroy();
@@ -76,14 +75,15 @@ try {
     <?php
 
     require("vistas/vista_principal.php");
-    if (isset($_POST['verHorario']) ||  isset($_POST['btnEditar'])) {
+
+    if (isset($_POST['verHorario'])) {
         require("vistas/vista_tabla.php");
+            // echo "<h3>Editando la 2º Hora ("..") del ".."</h3>";
     }
 
-    if (isset($_POST['btnEditar']))
-            require("vistas/vista_editar.php");
 
-    
+
+
 
     mysqli_free_result($usuarios);
     ?>
