@@ -1,5 +1,5 @@
 <?php
-if ($n_tupla > 0) {
+if ($n_tupla_user > 0) {
 
 echo "<p>Se dispone usted a borrar al usuario <strong>".$tupla['nombre']."</strong></p>
 

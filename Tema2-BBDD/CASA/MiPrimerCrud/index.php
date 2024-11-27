@@ -58,6 +58,8 @@ if (isset($_POST['btnContInsertar']) && !$errores_form) {
 try {
     $consulta = "select * from usuarios";
     $usuarios = mysqli_query($conexion, $consulta);
+    $n_tupla_user = mysqli_num_rows($usuarios);
+
 } catch (Exception $e) {
     mysqli_close($conexion);
     session_destroy();
