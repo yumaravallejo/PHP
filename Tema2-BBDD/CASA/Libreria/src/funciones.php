@@ -14,6 +14,22 @@ try {
     die(error_logs("Libreria", "No ha podido realizarse la conexión con la BD " . $e->getMessage()));
 }
 
+function repetido($conexion,$tabla,$columna,$valor,$columna_clave=null,$valor_clave=null) {
+    try {
+        if(isset($columna_clave))
+            $consulta="select * from ".$tabla." where ".$columna."='".$valor."' AND ".$columna_clave."<>'".$valor_clave."'";
+        else
+            $consulta="select * from ".$tabla." where ".$columna."='".$valor."'";
+
+        $resultado=mysqli_query($conexion, $consulta);
+        $respuesta=mysqli_num_rows($resultado)>0;
+        mysqli_free_result($resultado);
+    } catch (Exception $e) {
+        die("La consulta no se puede realizar ".$e->getMessage());
+    }
+    return $respuesta;
+}
+
 function error_logs($titulo, $body)
 {
     return "<!DOCTYPE html>

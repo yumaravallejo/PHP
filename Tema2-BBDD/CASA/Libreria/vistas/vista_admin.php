@@ -1,3 +1,4 @@
+
 <h1>Librería</h1>
 <?php
 echo "<form action='gest_libros.php' method='post'><p>Bienvenido <strong>" . $datos_usuario_logueado['lector'] . "</strong> - ";
@@ -10,6 +11,8 @@ if (isset($_POST['btnBorrar'])) {
             <button type='submit'>Volver</button>
           </p></form>";
 }
+
+
 ?>
 <h2>Listado de los libros</h2>
 <table>
