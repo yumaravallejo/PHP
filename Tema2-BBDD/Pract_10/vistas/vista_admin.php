@@ -99,7 +99,7 @@ if (mysqli_num_rows($alumnos) > 0) {
         
     }
 
-    if (isset($_POST['verNotas'])) {
+    if (isset($_POST['alumno'])) {
         echo "<h2>Notas del Alumno " . $usuario_elegido['nombre'] . "</h2>";
     ?>
         <table>
@@ -150,6 +150,10 @@ if (mysqli_num_rows($alumnos) > 0) {
             echo "<p>A <strong>" . $usuario_elegido['nombre'] . "</strong> no le quedan asignaturas por calificar.</p>";
         }
 
+    }
+
+    if (isset($_POST['btnEditar'])) {
+        
     }
 
     if (isset($_POST['btnBorrar'])) {

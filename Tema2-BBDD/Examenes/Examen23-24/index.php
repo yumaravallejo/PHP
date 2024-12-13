@@ -81,9 +81,11 @@ try {
             // echo "<h3>Editando la 2º Hora ("..") del ".."</h3>";
     }
 
-
-
-
+    
+    
+    
+    
+    
 
     mysqli_free_result($usuarios);
     ?>
