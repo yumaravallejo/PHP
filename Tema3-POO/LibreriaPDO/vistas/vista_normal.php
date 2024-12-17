@@ -19,11 +19,11 @@ catch(Exception $e){
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Examen2 Php PDO</title>
     <style>
-        .enlinea{display:inline}
-        .enlace{background:none;border:none;color:blue;text-decoration: underline;cursor: pointer;}
-        .contenedor_libros{display:flex;flex-wrap: wrap;}
-        .contenedor_libros div{width:30%;text-align:center}
+        .contenedor_libros{display:flex;flex-flow: row wrap;}
+        .contenedor_libros div{width:30%;text-align:center; margin-top: auto}
         .contenedor_libros div img{height:150px}
+        .mensaje{font-size:1.25em;color:blue}
+        .error{color:red}
     </style>
 </head>
 <body>

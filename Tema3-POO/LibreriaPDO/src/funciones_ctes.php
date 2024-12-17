@@ -18,10 +18,10 @@ function error_page($title,$body)
 function repetido($conexion, $tabla, $columna, $valor)
 {
     try{
-        $consulta="SELECT ".$columna." FROM ".$tabla." WHERE ".$columna."=?";
+        $consulta="SELECT ".$columna." FROM ".$tabla." WHERE ".$columna."= ?";
         $sentencia=$conexion->prepare($consulta);
-        $sentencia -> execute($valor);
-        $respuesta= $sentencia->numRows()>0;
+        $sentencia -> execute([$valor]);
+        $respuesta= $sentencia->rowCount()>0;
         $sentencia = null;
     }
     catch(PDOException $e){

@@ -106,6 +106,7 @@ catch(Exception $e){
         th{background-color: #CCC;}
         .mensaje{font-size:1.25em;color:blue}
         .error{color:red}
+        
     </style>
 </head>
 <body>
