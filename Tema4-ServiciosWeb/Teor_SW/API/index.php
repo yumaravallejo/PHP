@@ -28,9 +28,12 @@ $app->post('/saludo',function($request){
 $app->put('/cambiar_saludo/{id}',function($request){
 
     //se envian los datos por debajo
-    $nombre=$request->getParam("nombreAnt");
+    $nombre=$request->getAttribute("id");
     $nombreNuevo=$request->getParam("nombreNuevo");
     $respuesta["mensaje"]="actualizado el nombre ".$nombre." por ".$nombreNuevo;
+    $obj = json_decode($respuesta);
+    if (!$obj)die("<p>Error.</p>");
+
     echo json_encode($respuesta);
 
 });
