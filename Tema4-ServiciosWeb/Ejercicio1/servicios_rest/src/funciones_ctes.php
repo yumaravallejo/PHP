@@ -132,12 +132,11 @@ function obtener_producto($codigo)
     return $respuesta;
 }
 
-function insertar_producto()
+function insertar_producto($datos)
 {
     //Conectamos con la bd
     try {
         $conexion = new PDO("mysql:host=" . SERVIDOR_BD . ";dbname=" . NOMBRE_BD . "", USUARIO_BD, CLAVE_BD, array(PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES 'utf8'"));
-    } catch (PDOException $e) {
     } catch (PDOException $e) {
         //Mostramos el mensaje de error sin cerrar nada porque no se ha llegado a abrir
         $respuesta["error"] = "No se ha podido conectar a la BD: " . $e->getMessage();
@@ -147,22 +146,58 @@ function insertar_producto()
 
     //Insertamos el producto
     try {
-        $consulta = "INSERT producto (nombre, nombre_corto, descripcion, PVP, familia) VALUES(?,?,?,?,?)";
+        $consulta = "INSERT producto (cod, nombre, nombre_corto, descripcion, PVP, familia) VALUES(?,?,?,?,?,?)";
         $sentencia = $conexion->prepare($consulta);
-        $sentencia->execute();
+        //Si pasamos un array debemos asegurar que el orden sea el correcto
+        $sentencia->execute($datos);
     } catch (PDOException $e) {
         //Cerramos conexiones y sentencias
         $sentencia = null;
         $conexion = null;
         //Mostramos el mensaje de error
+        $respuesta["error"] = "No se ha podido insertar el producto: " . $e->getMessage();
+        return $respuesta;
+    }
+
+        $respuesta['mensaje'] = "El producto con código ".$datos[0]." se ha insertado correctamente";
+     
+
+
+    //Con la sentencia devolvemos el resultado
+    $sentencia = null;
+    $conexion = null;
+
+    return $respuesta;
+}
+
+function actualizar_producto($datos)
+{
+    //Conectamos con la bd
+    try {
+        $conexion = new PDO("mysql:host=" . SERVIDOR_BD . ";dbname=" . NOMBRE_BD . "", USUARIO_BD, CLAVE_BD, array(PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES 'utf8'"));
+    } catch (PDOException $e) {
+        //Mostramos el mensaje de error sin cerrar nada porque no se ha llegado a abrir
         $respuesta["error"] = "No se ha podido conectar a la BD: " . $e->getMessage();
         return $respuesta;
     }
 
-    if ($sentencia->rowCount()<=0)
-        $respuesta['mensaje'] = "El producto no se ha podido insertar en la BD";
-     else 
-        $respuesta['mensaje'] = "El producto se ha insertado correctamente";
+
+    //Insertamos el producto
+    try {
+        $consulta = "UPDATE producto SET nombre=?, nombre_corto=?, descripcion=?, PVP=?, familia=? WHERE cod=?";
+        $sentencia = $conexion->prepare($consulta);
+        //Si pasamos un array debemos asegurar que el orden sea el correcto
+        $sentencia->execute($datos);
+    } catch (PDOException $e) {
+        //Cerramos conexiones y sentencias
+        $sentencia = null;
+        $conexion = null;
+        //Mostramos el mensaje de error
+        $respuesta["error"] = "No se ha podido insertar el producto: " . $e->getMessage();
+        return $respuesta;
+    }
+
+        $respuesta['mensaje'] = "El producto con código ".end($datos)." se ha insertado correctamente";
      
 
 
