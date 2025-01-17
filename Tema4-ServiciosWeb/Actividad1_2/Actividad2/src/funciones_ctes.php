@@ -1,6 +1,6 @@
 <?php
 
-define("DIR_SERV","http://localhost/PHP/Tema4-ServiciosWeb/Actividad1_2/Actividad1/servicios_rest");
+define("DIR_SERV","http://localhost/Proyectos/Curso24_25/Servicios_Web/Actividad1/servicios_rest");
  function consumir_servicios_REST($url,$metodo,$datos=null)
  {
      $llamada=curl_init();
