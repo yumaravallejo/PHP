@@ -26,9 +26,8 @@ if(isset($_POST["btnLogin"]))
 
         if(isset($json_login["usuario"]))
         {
-            $_SESSION["usuario"]=$datos_env["usuario"];
-            $_SESSION["clave"]=$datos_env["clave"];
             $_SESSION["ultm_accion"]=time();
+            $_SESSION["token"]=$json_login["token"];
             header("Location:index.php");
             exit;
         }

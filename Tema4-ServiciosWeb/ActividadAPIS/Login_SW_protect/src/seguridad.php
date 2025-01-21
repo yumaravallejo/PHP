@@ -1,12 +1,20 @@
 <?php
 $url=DIR_SERV."/logueado";
-$headers[] = 'Authorization: Bearer '.$_SESSION['token'];
-$respuesta=consumir_servicios_REST($url,"POST",$headers);
+$headers[] = 'Authorization: Bearer '.$_SESSION["token"];
+$respuesta=consumir_servicios_JWT_REST($url,"GET",$headers);
 $json_login=json_decode($respuesta,true);
 if(!$json_login)
 {
     session_destroy();
     die(error_page("Login con SW","<p>Error consumiendo el Servicio Web: <strong>".$url."</strong></p>"));
+}
+
+if(isset($json_login["no_auth"]))
+{
+    session_unset();
+    $_SESSION["mensaje_seguridad"]="El tiempo de sesión de la API ha caducado";
+    header("Location:index.php");
+    exit;
 }
 
 if(isset($json_login["error"]))
@@ -29,6 +37,8 @@ if(isset($json_login["mensaje"]))
 // Dejo la conexión abierta y aprovecho para coger datos del usuario logueado
 
 $datos_usuario_log=$json_login["usuario"];
+$_SESSION["token"]=$json_login["token"];
+
 
 
 // Ahora controlo el tiempo de inactividad

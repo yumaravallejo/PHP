@@ -11,7 +11,7 @@ if(isset($_POST["btnCerrarSession"]))
     exit;
 }
 
-if(isset($_SESSION["usuario"]))
+if(isset($_SESSION["token"]))
 {
     //Control de baneo  
     //consulta a la BD y si está inicio sesión y salto a index
@@ -29,3 +29,4 @@ else
     require "vistas/vista_login.php";
 }
 ?>
+

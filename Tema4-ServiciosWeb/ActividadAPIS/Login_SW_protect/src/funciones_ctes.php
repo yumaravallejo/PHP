@@ -1,7 +1,6 @@
 <?php
 define("INACTIVIDAD",5);
-define("DIR_SERV","http://localhost/Proyectos/third_web/ActividadAPIS/Actividad3/API_login/");
-define("DIR_SERV_ADMIN","http://localhost/Proyectos/third_web/ActividadAPIS/Actividad1/servicios_rest");
+define("DIR_SERV","http://localhost/Proyectos/Curso24_25/Servicios_Web/Actividad5/servicios_rest_protect");
  function consumir_servicios_REST($url,$metodo,$datos=null)
  {
      $llamada=curl_init();
@@ -15,21 +14,19 @@ define("DIR_SERV_ADMIN","http://localhost/Proyectos/third_web/ActividadAPIS/Acti
      return $respuesta;
  }
 
- function consumir_servicios_REST_protegido($url,$metodo,$datos=null)
+ function consumir_servicios_JWT_REST($url,$metodo,$headers,$datos=null)
  {
      $llamada=curl_init();
      curl_setopt($llamada,CURLOPT_URL,$url);
      curl_setopt($llamada,CURLOPT_RETURNTRANSFER,true);
      curl_setopt($llamada,CURLOPT_CUSTOMREQUEST,$metodo);
+     curl_setopt($llamada,CURLOPT_HTTPHEADER,$headers);
      if(isset($datos))
          curl_setopt($llamada,CURLOPT_POSTFIELDS,http_build_query($datos));
      $respuesta=curl_exec($llamada);
      curl_close($llamada);
      return $respuesta;
  }
-
- 
-
  function error_page($title, $body)
  {
     return '<!DOCTYPE html>

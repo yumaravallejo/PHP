@@ -14,6 +14,6 @@
     <div>
         Bienvenido <strong><?php echo $datos_usuario_log["usuario"];?></strong> - <form class="enlinea" action="index.php" method="post"><button class="enlace" type="submit" name="btnCerrarSession">Salir</button></form>
     </div>
-    
+    <h3>Eres Normal</h3>
 </body>
 </html>
