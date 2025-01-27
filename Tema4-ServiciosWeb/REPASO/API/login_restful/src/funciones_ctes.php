@@ -1,8 +1,80 @@
 <?php
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
+
+require 'Firebase/autoload.php';
+
 define("SERVIDOR_BD", "localhost");
 define("USUARIO_BD", "jose");
 define("CLAVE_BD", "josefa");
 define("NOMBRE_BD", "bd_foro");
+define("PASSWORD_API","PASSWORD_DE_MI_APLICACION");
+
+//Esta función nos la pasará Miguel Angel
+
+function validateToken()
+{
+    //¿Existe la autorización?
+    //Si no existe es que no hay autorización
+    $headers = apache_request_headers();
+    if(!isset($headers["Authorization"]))
+        return false;//Sin autorizacion
+    else
+    {
+        $authorization = $headers["Authorization"];
+        $authorizationArray=explode(" ",$authorization); //Bearer, Tokken
+        $token=$authorizationArray[1];
+        try{
+            $info=JWT::decode($token,new Key(PASSWORD_API,'HS256')); //Clave generada con semilla (pswrd) y hash
+        }
+        catch(\Throwable $th){
+            //Si no logro decodificar es porque se ha pasado el tiempo
+            return false;//Expirado
+        }
+
+        //Si todo va bien en info['data'] tengo la id, porque abajo lo llamé data
+
+        try{
+            $conexion= new PDO("mysql:host=".SERVIDOR_BD.";dbname=".NOMBRE_BD,USUARIO_BD,CLAVE_BD,array(PDO::MYSQL_ATTR_INIT_COMMAND=>"SET NAMES 'utf8'"));
+        }
+        catch(PDOException $e){
+            
+            $respuesta["error"]="Imposible conectar:".$e->getMessage();
+            return $respuesta;
+        }
+
+        try{
+            $consulta="select * from usuarios where id_usuario=?";
+            $sentencia=$conexion->prepare($consulta);
+            $sentencia->execute([$info->data]);
+        }
+        catch(PDOException $e){
+            $respuesta["error"]="Imposible realizar la consulta:".$e->getMessage();
+            $sentencia=null;
+            $conexion=null;
+            return $respuesta;
+        }
+        if($sentencia->rowCount()>0)
+        {
+            $respuesta["usuario"]=$sentencia->fetch(PDO::FETCH_ASSOC);
+         
+            //Creación del Tokken con información
+            $payload['exp']=time()+3600;
+            $payload['data'] = $respuesta["usuario"]["id_usuario"];
+            $jwt = JWT::encode($payload,PASSWORD_API,'HS256');
+            $respuesta["token"]=$jwt;
+        }
+            
+        else
+            //Te han baneado o te haN borrado de la BD
+            $respuesta["mensaje"]="El usuario no se encuentra registrado en la BD";
+
+        $sentencia=null;
+        $conexion=null;
+        return $respuesta;
+    }
+    
+}
 
 function obtener_usuarios()
 {
