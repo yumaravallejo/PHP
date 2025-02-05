@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Actividad 1</title>
     <script src="js/jquery-3.7.1.min.js"></script>
-    <script src="js/index.js"></script>
+    
     <style>
         table {
             border: 1px solid black;
@@ -33,6 +33,9 @@
     <h1>Listado de los productos</h1>
     <div id="respuesta"></div>
     <div id="tabla"></div>
+
+
+    <script src="js/index.js"></script>
 </body>
 
 </html>
