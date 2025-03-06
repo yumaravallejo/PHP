@@ -12,7 +12,6 @@ $app->get('/productos',function(){
 });
 
 $app->get('/producto/{codigo}',function($request){
-
     $cod=$request->getAttribute("codigo");
     echo json_encode(obtener_producto($cod));
 });

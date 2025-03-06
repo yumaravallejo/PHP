@@ -59,4 +59,6 @@ $app -> get('/repetido/{tabla}/{columna}/{valor}/{columna_id}/{valor_id}', funct
     json_encode(repetido_editar($tabla, $columna, $valor, $columna_id, $valor_id));
 });
 
+$app->run();
+
 ?>
